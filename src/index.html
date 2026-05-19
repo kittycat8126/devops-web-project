@@ -1,18 +1,869 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>DevOps Project</title>
-    <style>
-        body { font-family: Arial; text-align: center; margin-top: 100px; background: #f0f4f8; }
-        h1 { color: #2c3e50; }
-        p  { color: #555; }
-        .badge { background: #27ae60; color: white; padding: 8px 20px; border-radius: 20px; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NexTask — Smart Productivity Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07);
+    --accent: #7c6fff;
+    --accent2: #ff6b9d;
+    --accent3: #00d4aa;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #ff4d6d;
+    --warn: #ffb347;
+    --success: #00d4aa;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG grain */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.4;
+  }
+
+  /* Glow blobs */
+  .blob {
+    position: fixed; border-radius: 50%; filter: blur(100px);
+    pointer-events: none; z-index: 0;
+  }
+  .blob1 { width: 500px; height: 500px; background: rgba(124,111,255,0.12); top: -100px; left: -100px; }
+  .blob2 { width: 400px; height: 400px; background: rgba(255,107,157,0.08); bottom: -80px; right: -80px; }
+  .blob3 { width: 300px; height: 300px; background: rgba(0,212,170,0.07); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+  /* Layout */
+  .shell { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .header-meta { display: flex; align-items: center; gap: 16px; }
+  .clock { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .weather-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-size: 0.8rem; color: var(--muted);
+  }
+
+  /* Nav tabs */
+  nav {
+    display: flex; gap: 4px;
+    padding: 12px 32px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 8px 18px; border-radius: 8px; border: none;
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .tab:hover { background: var(--surface2); color: var(--text); }
+  .tab.active { background: var(--accent); color: #fff; }
+
+  /* Panels */
+  .panels { padding: 28px 32px; flex: 1; }
+  .panel { display: none; animation: fadeUp 0.3s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── DASHBOARD ── */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; }
+  .stat-sub { font-size: 0.78rem; color: var(--muted); }
+  .c-accent { color: var(--accent); }
+  .c-accent2 { color: var(--accent2); }
+  .c-accent3 { color: var(--accent3); }
+  .c-warn { color: var(--warn); }
+
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width: 700px) { .dash-grid { grid-template-columns: 1fr; } }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Progress bars */
+  .progress-item { margin-bottom: 14px; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
+  .prog-track { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+
+  /* Mini activity chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+  .bar {
+    flex: 1; border-radius: 4px 4px 0 0;
+    background: var(--accent); opacity: 0.3;
+    transition: opacity 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  .bar:hover { opacity: 1; }
+  .bar.active { opacity: 0.9; }
+  .bar-labels { display: flex; gap: 6px; margin-top: 6px; }
+  .bar-label { flex: 1; text-align: center; font-size: 0.65rem; color: var(--muted); }
+
+  /* ── TASK MANAGER ── */
+  .task-input-row {
+    display: flex; gap: 10px; margin-bottom: 20px;
+  }
+  .task-input {
+    flex: 1; padding: 12px 16px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .task-input:focus { border-color: var(--accent); }
+  .task-input::placeholder { color: var(--muted); }
+  select.task-input { cursor: pointer; }
+
+  .btn {
+    padding: 11px 22px; border-radius: 10px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6a5ce8; transform: translateY(-1px); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 6px 14px; font-size: 0.8rem; border-radius: 7px; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn.active, .filter-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+  .task-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-radius: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    transition: all 0.2s; animation: fadeUp 0.25s ease;
+  }
+  .task-item:hover { border-color: rgba(124,111,255,0.3); }
+  .task-item.done { opacity: 0.5; }
+  .task-item.done .task-text { text-decoration: line-through; }
+  .task-check {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid var(--border); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .task-check.checked { background: var(--accent3); border-color: var(--accent3); }
+  .task-text { flex: 1; font-size: 0.9rem; }
+  .task-priority {
+    font-size: 0.7rem; padding: 3px 8px; border-radius: 20px; font-weight: 500;
+  }
+  .p-high { background: rgba(255,77,109,0.15); color: var(--danger); }
+  .p-medium { background: rgba(255,179,71,0.15); color: var(--warn); }
+  .p-low { background: rgba(0,212,170,0.15); color: var(--success); }
+  .task-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; transition: color 0.2s; }
+  .task-del:hover { color: var(--danger); }
+
+  /* ── POMODORO ── */
+  .pomo-center { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 20px 0; }
+  .pomo-ring {
+    width: 220px; height: 220px; border-radius: 50%;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .pomo-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .pomo-ring circle { fill: none; stroke-width: 8; }
+  .pomo-track { stroke: var(--surface2); }
+  .pomo-progress { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .pomo-inner { text-align: center; }
+  .pomo-time { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; letter-spacing: -2px; }
+  .pomo-mode { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+  .pomo-btns { display: flex; gap: 12px; }
+  .pomo-sessions { display: flex; gap: 8px; }
+  .pomo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); transition: background 0.3s; }
+  .pomo-dot.done { background: var(--accent); }
+  .pomo-log { width: 100%; max-width: 400px; }
+  .pomo-log-item { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border); }
+
+  /* ── NOTES ── */
+  .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .note-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px;
+    display: flex; flex-direction: column; gap: 10px;
+    animation: fadeUp 0.25s ease;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .note-card:hover { transform: translateY(-2px); border-color: rgba(124,111,255,0.3); }
+  .note-head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .note-title { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.95rem; }
+  .note-body { font-size: 0.85rem; color: var(--muted); line-height: 1.6; flex: 1; }
+  .note-footer { font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; }
+  .note-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .note-add-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .note-add-form textarea {
+    padding: 12px 16px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    resize: vertical; min-height: 80px; outline: none;
+  }
+  .note-add-form textarea:focus { border-color: var(--accent); }
+  .note-colors { display: flex; gap: 8px; align-items: center; }
+  .nc { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s; }
+  .nc.sel { border-color: #fff; }
+
+  /* ── CALCULATOR ── */
+  .calc-wrap { display: flex; justify-content: center; padding: 10px 0; }
+  .calc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 24px; width: 300px;
+  }
+  .calc-display {
+    background: var(--surface2); border-radius: 12px; padding: 16px 20px;
+    margin-bottom: 16px; text-align: right; min-height: 80px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .calc-expr { font-size: 0.8rem; color: var(--muted); min-height: 20px; word-break: break-all; }
+  .calc-val { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 700; word-break: break-all; }
+  .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .ck {
+    padding: 16px 0; border-radius: 12px; border: none;
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; background: var(--surface2); color: var(--text);
+  }
+  .ck:hover { transform: scale(1.05); }
+  .ck:active { transform: scale(0.95); }
+  .ck.op { background: rgba(124,111,255,0.2); color: var(--accent); }
+  .ck.eq { background: var(--accent); color: #fff; }
+  .ck.ac { background: rgba(255,77,109,0.2); color: var(--danger); }
+  .ck.span2 { grid-column: span 2; }
+
+  /* ── WEATHER ── */
+  .weather-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+  .weather-main {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(124,111,255,0.15), rgba(0,212,170,0.1));
+    border: 1px solid rgba(124,111,255,0.2);
+    border-radius: 16px; padding: 28px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;
+  }
+  .weather-temp { font-family: 'Syne', sans-serif; font-size: 4rem; font-weight: 800; }
+  .weather-desc { color: var(--muted); font-size: 1rem; margin-top: 4px; }
+  .weather-icon { font-size: 5rem; }
+  .weather-day {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; text-align: center;
+  }
+  .weather-day-name { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+  .weather-day-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .weather-day-temp { font-family: 'Syne', sans-serif; font-weight: 700; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+
+  /* Empty state */
+  .empty { text-align: center; color: var(--muted); padding: 40px; font-size: 0.9rem; }
+  .empty span { display: block; font-size: 2.5rem; margin-bottom: 12px; }
+</style>
 </head>
 <body>
-    <h1>🚀 DevOps CI/CD Project</h1>
-    <p>Deployed automatically using Jenkins + GitHub + AWS EC2</p>
-    <span class="badge">Pipeline: SUCCESS ✅</span>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+
+<div class="shell">
+  <header>
+    <div class="logo">Nex<span>Task</span></div>
+    <div class="header-meta">
+      <div class="clock" id="clockDisplay">--:--:--</div>
+      <div class="weather-pill">☀️ <span id="headerTemp">28°C</span> · Ludhiana</div>
+    </div>
+  </header>
+
+  <nav>
+    <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="switchTab('tasks')">✅ Tasks</button>
+    <button class="tab" onclick="switchTab('pomodoro')">🍅 Pomodoro</button>
+    <button class="tab" onclick="switchTab('notes')">📝 Notes</button>
+    <button class="tab" onclick="switchTab('calculator')">🧮 Calculator</button>
+    <button class="tab" onclick="switchTab('weather')">🌤️ Weather</button>
+  </nav>
+
+  <div class="panels">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Tasks Today</div>
+          <div class="stat-value c-accent" id="stat-total">0</div>
+          <div class="stat-sub">total added</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value c-accent3" id="stat-done">0</div>
+          <div class="stat-sub">tasks done ✓</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pomodoros</div>
+          <div class="stat-value c-accent2" id="stat-pomos">0</div>
+          <div class="stat-sub">sessions today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Notes</div>
+          <div class="stat-value c-warn" id="stat-notes">0</div>
+          <div class="stat-sub">saved</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-title">📈 Weekly Activity</div>
+          <div class="bar-chart" id="activityChart"></div>
+          <div class="bar-labels" id="activityLabels"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎯 Task Progress</div>
+          <div id="progressBars">
+            <div class="progress-item">
+              <div class="prog-label"><span>High Priority</span><span id="prog-high-val">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="prog-high" style="width:0%;background:var(--danger)"></div></div>
+            </div>
+            <div class="progress-item">
+              <div class="prog-label"><span>Medium Priority</span><span id="prog-med-val">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="prog-med" style="width:0%;background:var(--warn)"></div></div>
+            </div>
+            <div class="progress-item">
+              <div class="prog-label"><span>Low Priority</span><span id="prog-low-val">0%</span></div>
+              <div class="prog-track"><div class="prog-fill" id="prog-low" style="width:0%;background:var(--success)"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⏰ Today's Date</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:700;" id="dashDate"></div>
+          <div style="color:var(--muted);font-size:0.85rem;margin-top:6px;" id="dashDay"></div>
+          <div style="margin-top:16px;font-size:0.82rem;color:var(--muted);">Focus time today</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--accent2);margin-top:4px;" id="dashFocus">0 min</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🚀 Quick Add Task</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <input class="task-input" id="quickTaskInput" placeholder="What needs to be done?" style="width:100%"/>
+            <button class="btn btn-primary" onclick="quickAddTask()">Add Task →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="panel" id="panel-tasks">
+      <div class="task-input-row">
+        <input class="task-input" id="taskInput" placeholder="Add a new task..."/>
+        <select class="task-input" id="taskPriority" style="max-width:130px">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+        <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
+        <button class="filter-btn" onclick="setFilter('done',this)">Done</button>
+        <button class="filter-btn" onclick="setFilter('high',this)">🔴 High</button>
+        <button class="filter-btn" onclick="setFilter('medium',this)">🟡 Medium</button>
+        <button class="filter-btn" onclick="setFilter('low',this)">🟢 Low</button>
+      </div>
+      <div class="task-list" id="taskList"></div>
+    </div>
+
+    <!-- POMODORO -->
+    <div class="panel" id="panel-pomodoro">
+      <div class="pomo-center">
+        <div class="pomo-ring">
+          <svg viewBox="0 0 220 220" width="220" height="220">
+            <circle class="pomo-track" cx="110" cy="110" r="100"/>
+            <circle class="pomo-progress" id="pomoRing" cx="110" cy="110" r="100"
+              stroke-dasharray="628" stroke-dashoffset="0"/>
+          </svg>
+          <div class="pomo-inner">
+            <div class="pomo-time" id="pomoTime">25:00</div>
+            <div class="pomo-mode" id="pomoMode">Focus Session</div>
+          </div>
+        </div>
+        <div class="pomo-sessions" id="pomoSessions"></div>
+        <div class="pomo-btns">
+          <button class="btn btn-primary" id="pomoStart" onclick="togglePomo()">▶ Start</button>
+          <button class="btn" style="background:var(--surface2)" onclick="resetPomo()">↺ Reset</button>
+          <button class="btn" style="background:var(--surface2)" onclick="skipPomo()">⏭ Skip</button>
+        </div>
+        <div class="pomo-log" id="pomoLog"></div>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="panel" id="panel-notes">
+      <div class="note-add-form">
+        <div style="display:flex;gap:10px;">
+          <input class="task-input" id="noteTitle" placeholder="Note title..." style="flex:1"/>
+          <div class="note-colors" id="noteColors"></div>
+        </div>
+        <textarea class="task-input" id="noteBody" placeholder="Write your note here..."></textarea>
+        <button class="btn btn-primary" onclick="addNote()" style="align-self:flex-start">Save Note</button>
+      </div>
+      <div class="notes-grid" id="notesGrid"></div>
+    </div>
+
+    <!-- CALCULATOR -->
+    <div class="panel" id="panel-calculator">
+      <div class="calc-wrap">
+        <div class="calc">
+          <div class="calc-display">
+            <div class="calc-expr" id="calcExpr"></div>
+            <div class="calc-val" id="calcVal">0</div>
+          </div>
+          <div class="calc-grid">
+            <button class="ck ac" onclick="calcAC()">AC</button>
+            <button class="ck op" onclick="calcSign()">+/-</button>
+            <button class="ck op" onclick="calcPercent()">%</button>
+            <button class="ck op" onclick="calcOp('÷')">÷</button>
+            <button class="ck" onclick="calcNum('7')">7</button>
+            <button class="ck" onclick="calcNum('8')">8</button>
+            <button class="ck" onclick="calcNum('9')">9</button>
+            <button class="ck op" onclick="calcOp('×')">×</button>
+            <button class="ck" onclick="calcNum('4')">4</button>
+            <button class="ck" onclick="calcNum('5')">5</button>
+            <button class="ck" onclick="calcNum('6')">6</button>
+            <button class="ck op" onclick="calcOp('−')">−</button>
+            <button class="ck" onclick="calcNum('1')">1</button>
+            <button class="ck" onclick="calcNum('2')">2</button>
+            <button class="ck" onclick="calcNum('3')">3</button>
+            <button class="ck op" onclick="calcOp('+')">+</button>
+            <button class="ck span2" onclick="calcNum('0')">0</button>
+            <button class="ck" onclick="calcDot()">.</button>
+            <button class="ck eq" onclick="calcEquals()">=</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEATHER -->
+    <div class="panel" id="panel-weather">
+      <div class="weather-wrap" id="weatherWrap"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let tasks = JSON.parse(localStorage.getItem('nx-tasks') || '[]');
+let notes = JSON.parse(localStorage.getItem('nx-notes') || '[]');
+let pomoCounts = parseInt(localStorage.getItem('nx-pomos') || '0');
+let focusMinutes = parseInt(localStorage.getItem('nx-focus') || '0');
+let taskFilter = 'all';
+
+// ── TABS ──
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'dashboard') updateDashboard();
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockDisplay').textContent =
+    now.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── DASHBOARD ──
+function updateDashboard() {
+  const done = tasks.filter(t => t.done).length;
+  document.getElementById('stat-total').textContent = tasks.length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pomos').textContent = pomoCounts;
+  document.getElementById('stat-notes').textContent = notes.length;
+  document.getElementById('dashFocus').textContent = focusMinutes + ' min';
+
+  const now = new Date();
+  document.getElementById('dashDate').textContent =
+    now.toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('dashDay').textContent =
+    now.toLocaleDateString('en-IN', {weekday:'long'});
+
+  // progress by priority
+  ['high','medium','low'].forEach(p => {
+    const all = tasks.filter(t => t.priority === p);
+    const done = all.filter(t => t.done).length;
+    const pct = all.length ? Math.round(done/all.length*100) : 0;
+    const key = p === 'medium' ? 'med' : p;
+    document.getElementById('prog-'+key).style.width = pct + '%';
+    document.getElementById('prog-'+key+'-val').textContent = pct + '%';
+  });
+
+  // activity chart
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const heights = days.map(() => Math.floor(Math.random() * 70 + 20));
+  const todayIdx = (new Date().getDay() + 6) % 7;
+  const chart = document.getElementById('activityChart');
+  const labels = document.getElementById('activityLabels');
+  chart.innerHTML = days.map((d,i) =>
+    `<div class="bar ${i===todayIdx?'active':''}" style="height:${heights[i]}%" title="${heights[i]} tasks"></div>`
+  ).join('');
+  labels.innerHTML = days.map(d => `<div class="bar-label">${d}</div>`).join('');
+}
+updateDashboard();
+
+// ── TASKS ──
+function saveTasks() { localStorage.setItem('nx-tasks', JSON.stringify(tasks)); }
+
+function addTask(fromQuick) {
+  const input = fromQuick ? document.getElementById('quickTaskInput') : document.getElementById('taskInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const priority = fromQuick ? 'medium' : document.getElementById('taskPriority').value;
+  tasks.unshift({ id: Date.now(), text, priority, done: false, date: new Date().toLocaleDateString() });
+  saveTasks(); input.value = '';
+  renderTasks(); updateDashboard();
+}
+
+function quickAddTask() {
+  addTask(true);
+  switchTab('tasks');
+  document.querySelectorAll('.tab').forEach((t,i) => { if(i===1) t.classList.add('active'); else t.classList.remove('active'); });
+}
+
+function toggleTask(id) {
+  tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
+  saveTasks(); renderTasks(); updateDashboard();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks(); renderTasks(); updateDashboard();
+}
+
+function setFilter(f, el) {
+  taskFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
+
+function renderTasks() {
+  let filtered = tasks;
+  if (taskFilter === 'active') filtered = tasks.filter(t => !t.done);
+  else if (taskFilter === 'done') filtered = tasks.filter(t => t.done);
+  else if (['high','medium','low'].includes(taskFilter)) filtered = tasks.filter(t => t.priority === taskFilter);
+
+  const list = document.getElementById('taskList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><span>📭</span>No tasks here yet!</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(t => `
+    <div class="task-item ${t.done?'done':''}">
+      <div class="task-check ${t.done?'checked':''}" onclick="toggleTask(${t.id})">
+        ${t.done ? '✓' : ''}
+      </div>
+      <div class="task-text">${t.text}</div>
+      <span class="task-priority p-${t.priority}">${t.priority}</span>
+      <span style="font-size:0.72rem;color:var(--muted)">${t.date}</span>
+      <button class="task-del" onclick="deleteTask(${t.id})">✕</button>
+    </div>
+  `).join('');
+}
+renderTasks();
+
+// ── POMODORO ──
+let pomoState = { running: false, mode: 'focus', seconds: 25*60, session: 0 };
+let pomoInterval = null;
+const POMO_TIMES = { focus: 25*60, short: 5*60, long: 15*60 };
+
+function renderPomoSessions() {
+  const s = document.getElementById('pomoSessions');
+  s.innerHTML = Array.from({length:4},(_,i)=>
+    `<div class="pomo-dot ${i < pomoState.session ? 'done':''}"></div>`
+  ).join('');
+}
+
+function updatePomoRing() {
+  const total = POMO_TIMES[pomoState.mode];
+  const frac = pomoState.seconds / total;
+  const circ = 628;
+  document.getElementById('pomoRing').style.strokeDashoffset = circ * (1 - frac);
+  const color = pomoState.mode === 'focus' ? 'var(--accent)' : 'var(--accent3)';
+  document.getElementById('pomoRing').style.stroke = color;
+}
+
+function updatePomoDisplay() {
+  const m = String(Math.floor(pomoState.seconds/60)).padStart(2,'0');
+  const s = String(pomoState.seconds%60).padStart(2,'0');
+  document.getElementById('pomoTime').textContent = m + ':' + s;
+  const modes = { focus: 'Focus Session', short: 'Short Break', long: 'Long Break' };
+  document.getElementById('pomoMode').textContent = modes[pomoState.mode];
+  updatePomoRing();
+}
+
+function togglePomo() {
+  if (pomoState.running) {
+    clearInterval(pomoInterval); pomoState.running = false;
+    document.getElementById('pomoStart').textContent = '▶ Resume';
+  } else {
+    pomoState.running = true;
+    document.getElementById('pomoStart').textContent = '⏸ Pause';
+    pomoInterval = setInterval(() => {
+      pomoState.seconds--;
+      updatePomoDisplay();
+      if (pomoState.seconds <= 0) {
+        clearInterval(pomoInterval); pomoState.running = false;
+        if (pomoState.mode === 'focus') {
+          pomoCounts++; pomoState.session++;
+          focusMinutes += 25;
+          localStorage.setItem('nx-pomos', pomoCounts);
+          localStorage.setItem('nx-focus', focusMinutes);
+          addPomoLog('focus');
+          if (pomoState.session % 4 === 0) { pomoState.mode = 'long'; pomoState.seconds = POMO_TIMES.long; }
+          else { pomoState.mode = 'short'; pomoState.seconds = POMO_TIMES.short; }
+        } else {
+          addPomoLog(pomoState.mode);
+          pomoState.mode = 'focus'; pomoState.seconds = POMO_TIMES.focus;
+        }
+        renderPomoSessions();
+        document.getElementById('pomoStart').textContent = '▶ Start';
+        updatePomoDisplay(); updateDashboard();
+      }
+    }, 1000);
+  }
+}
+
+function resetPomo() {
+  clearInterval(pomoInterval); pomoState.running = false;
+  pomoState.seconds = POMO_TIMES[pomoState.mode];
+  document.getElementById('pomoStart').textContent = '▶ Start';
+  updatePomoDisplay();
+}
+
+function skipPomo() {
+  clearInterval(pomoInterval); pomoState.running = false;
+  pomoState.seconds = 0;
+  updatePomoDisplay();
+}
+
+let pomoLogs = [];
+function addPomoLog(type) {
+  const labels = { focus:'🍅 Focus done', short:'☕ Short break', long:'🌿 Long break' };
+  pomoLogs.unshift({ label: labels[type], time: new Date().toLocaleTimeString() });
+  if (pomoLogs.length > 5) pomoLogs.pop();
+  const log = document.getElementById('pomoLog');
+  log.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-family:Syne,sans-serif;font-weight:600;">Session Log</div>'
+    + pomoLogs.map(l => `<div class="pomo-log-item"><span>${l.label}</span><span>${l.time}</span></div>`).join('');
+}
+
+renderPomoSessions(); updatePomoDisplay();
+
+// ── NOTES ──
+const NOTE_COLORS = ['#7c6fff','#ff6b9d','#00d4aa','#ffb347','#4fc3f7'];
+let selectedColor = NOTE_COLORS[0];
+
+function renderNoteColors() {
+  document.getElementById('noteColors').innerHTML = NOTE_COLORS.map(c =>
+    `<div class="nc ${c===selectedColor?'sel':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`
+  ).join('');
+}
+function selectColor(c) { selectedColor = c; renderNoteColors(); }
+renderNoteColors();
+
+function saveNotes() { localStorage.setItem('nx-notes', JSON.stringify(notes)); }
+
+function addNote() {
+  const title = document.getElementById('noteTitle').value.trim();
+  const body = document.getElementById('noteBody').value.trim();
+  if (!title && !body) return;
+  notes.unshift({ id: Date.now(), title: title || 'Untitled', body, color: selectedColor, date: new Date().toLocaleDateString() });
+  saveNotes();
+  document.getElementById('noteTitle').value = '';
+  document.getElementById('noteBody').value = '';
+  renderNotes(); updateDashboard();
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  saveNotes(); renderNotes(); updateDashboard();
+}
+
+function renderNotes() {
+  const grid = document.getElementById('notesGrid');
+  if (!notes.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><span>📓</span>No notes yet. Add one above!</div>';
+    return;
+  }
+  grid.innerHTML = notes.map(n => `
+    <div class="note-card">
+      <div class="note-head">
+        <div class="note-title">${n.title}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="note-color" style="background:${n.color}"></div>
+          <button class="task-del" onclick="deleteNote(${n.id})">✕</button>
+        </div>
+      </div>
+      <div class="note-body">${n.body || '<em>Empty note</em>'}</div>
+      <div class="note-footer">${n.date}</div>
+    </div>
+  `).join('');
+}
+renderNotes();
+
+// ── CALCULATOR ──
+let calcState = { display: '0', expr: '', prev: null, op: null, reset: false };
+
+function calcUpdate() {
+  document.getElementById('calcVal').textContent = calcState.display;
+  document.getElementById('calcExpr').textContent = calcState.expr;
+}
+
+function calcNum(n) {
+  if (calcState.reset) { calcState.display = n; calcState.reset = false; }
+  else calcState.display = calcState.display === '0' ? n : calcState.display + n;
+  calcUpdate();
+}
+
+function calcDot() {
+  if (calcState.reset) { calcState.display = '0.'; calcState.reset = false; return; }
+  if (!calcState.display.includes('.')) calcState.display += '.';
+  calcUpdate();
+}
+
+function calcOp(op) {
+  calcState.prev = parseFloat(calcState.display);
+  calcState.op = op;
+  calcState.expr = calcState.display + ' ' + op;
+  calcState.reset = true;
+  calcUpdate();
+}
+
+function calcEquals() {
+  if (!calcState.op || calcState.prev === null) return;
+  const curr = parseFloat(calcState.display);
+  const ops = { '+': (a,b) => a+b, '−': (a,b) => a-b, '×': (a,b) => a*b, '÷': (a,b) => b!==0?a/b:'Error' };
+  const result = ops[calcState.op](calcState.prev, curr);
+  calcState.expr = calcState.expr + ' ' + calcState.display + ' =';
+  calcState.display = String(parseFloat(result.toFixed(10)));
+  calcState.op = null; calcState.prev = null; calcState.reset = true;
+  calcUpdate();
+}
+
+function calcAC() { calcState = { display:'0', expr:'', prev:null, op:null, reset:false }; calcUpdate(); }
+function calcSign() { calcState.display = String(-parseFloat(calcState.display)); calcUpdate(); }
+function calcPercent() { calcState.display = String(parseFloat(calcState.display)/100); calcUpdate(); }
+
+// keyboard support
+document.addEventListener('keydown', e => {
+  const panel = document.querySelector('.panel.active');
+  if (panel && panel.id !== 'panel-calculator') return;
+  if ('0123456789'.includes(e.key)) calcNum(e.key);
+  else if (e.key === '.') calcDot();
+  else if (e.key === '+') calcOp('+');
+  else if (e.key === '-') calcOp('−');
+  else if (e.key === '*') calcOp('×');
+  else if (e.key === '/') { e.preventDefault(); calcOp('÷'); }
+  else if (e.key === 'Enter' || e.key === '=') calcEquals();
+  else if (e.key === 'Backspace') {
+    calcState.display = calcState.display.length > 1 ? calcState.display.slice(0,-1) : '0';
+    calcUpdate();
+  }
+  else if (e.key === 'Escape') calcAC();
+});
+
+// ── WEATHER ──
+const weatherData = {
+  current: { icon:'☀️', temp:28, feel:31, humidity:55, wind:14, desc:'Clear Sky', city:'Ludhiana, PB' },
+  forecast: [
+    {day:'Mon',icon:'☀️',hi:30,lo:22},{day:'Tue',icon:'⛅',hi:27,lo:20},
+    {day:'Wed',icon:'🌧️',hi:24,lo:19},{day:'Thu',icon:'🌦️',hi:26,lo:21},
+    {day:'Fri',icon:'☀️',hi:32,lo:23},{day:'Sat',icon:'🌤️',hi:31,lo:22},
+  ]
+};
+
+function renderWeather() {
+  const w = weatherData;
+  document.getElementById('headerTemp').textContent = w.current.temp + '°C';
+  document.getElementById('weatherWrap').innerHTML = `
+    <div class="weather-main">
+      <div>
+        <div style="font-size:0.85rem;color:var(--muted);margin-bottom:4px">📍 ${w.current.city}</div>
+        <div class="weather-temp">${w.current.temp}°C</div>
+        <div class="weather-desc">${w.current.desc}</div>
+        <div style="display:flex;gap:20px;margin-top:16px;font-size:0.82rem;color:var(--muted)">
+          <span>💧 ${w.current.humidity}%</span>
+          <span>💨 ${w.current.wind} km/h</span>
+          <span>🌡️ Feels ${w.current.feel}°C</span>
+        </div>
+      </div>
+      <div class="weather-icon">${w.current.icon}</div>
+    </div>
+    ${w.forecast.map(f=>`
+      <div class="weather-day">
+        <div class="weather-day-name">${f.day}</div>
+        <div class="weather-day-icon">${f.icon}</div>
+        <div class="weather-day-temp">${f.hi}° / ${f.lo}°</div>
+      </div>
+    `).join('')}
+  `;
+}
+renderWeather();
+
+// keyboard shortcut Enter on task input
+document.getElementById('taskInput').addEventListener('keydown', e => { if(e.key==='Enter') addTask(); });
+document.getElementById('quickTaskInput').addEventListener('keydown', e => { if(e.key==='Enter') quickAddTask(); });
+</script>
 </body>
 </html>
