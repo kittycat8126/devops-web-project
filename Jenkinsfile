@@ -14,7 +14,7 @@ pipeline {
                 echo "=========================================="
                 echo " Cloning ${APP_NAME} from GitHub..."
                 echo "=========================================="
-                git branch: 'main', url: 'https://github.com/YOUR_USERNAME/devops-web-project.git'
+                git branch: 'main', url: 'https://github.com/Kittycat8126/devops-web-project.git'
             }
         }
 
